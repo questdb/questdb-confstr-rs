@@ -73,7 +73,8 @@ impl ConfStr {
         &self.params
     }
 
-    /// Get a parameter by case-insensitive key.
+    /// Get a parameter.
+    /// Key should always be specified as lowercase.
     pub fn get(&self, key: &str) -> Option<&str> {
         self.params.get(key).map(|s| s.as_str())
     }
