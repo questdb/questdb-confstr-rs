@@ -1,4 +1,1 @@
-rm -fR ./build > /dev/null 2>&1 && \
-cmake -B ./build -S . && \
-cmake --build ./build && \
 ./build/test

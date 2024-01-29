@@ -45,6 +45,12 @@ jobs:
         command: clippy
         args: --all-targets --all-features -- -D warnings
 
+    - name: Compile FFI tests
+      run: |
+        cd questdb-confstr-ffi
+        cd cpp_test
+        ./compile
+
     - name: Run FFI tests
       run: |
         cd questdb-confstr-ffi
