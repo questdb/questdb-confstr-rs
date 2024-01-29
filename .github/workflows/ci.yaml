@@ -44,3 +44,9 @@ jobs:
       with:
         command: clippy
         args: --all-targets --all-features -- -D warnings
+
+    - name: Run FFI tests
+      run: |
+        cd questdb-confstr-ffi
+        cd cpp_test
+        ./run
