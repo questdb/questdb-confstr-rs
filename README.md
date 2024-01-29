@@ -15,7 +15,7 @@ A few rules:
 * The last semicolon is mandatory.
 * Service name and keys are case-insensitive.
 * Values are case-sensitive.
-* A semicolon can't appear as a key.
+* Keys are ASCII alphanumeric and start with a letter.
 * If a semicolon `;` appears in a value, escaped it as a double semicolon `;;`.
 
 ## Grammar
