@@ -328,3 +328,22 @@ fn unicode_value() -> Result<(), ParsingError> {
     assert_eq!(config.get("x"), Some("協定"));
     Ok(())
 }
+
+#[test]
+fn invalid_ctrl_chars_in_value() {
+    let bad_chars = [
+        '\x00', '\x01', '\x02', '\x03', '\x04', '\x1f', '\x7f', '\u{80}', '\u{8a}', '\u{9f}',
+    ];
+    for bad in bad_chars {
+        let input = format!("http::x={};", bad);
+        let config = parse_conf_str(&input);
+        assert!(config.is_err());
+        let err = config.unwrap_err();
+        assert_eq!(err.kind(), ErrorKind::InvalidCharInValue(bad));
+        assert_eq!(err.position(), 8);
+        assert_eq!(
+            err.to_string(),
+            format!("invalid char {:?} in value at position 8", bad)
+        );
+    }
+}

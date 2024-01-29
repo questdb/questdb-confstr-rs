@@ -14,9 +14,10 @@ service::key1=value1;key2=value2;key3=value3;
 A few rules:
 * The last semicolon is mandatory.
 * Service name and keys are case-insensitive.
-* Values are case-sensitive.
 * Keys are ASCII alphanumeric and start with a letter.
-* If a semicolon `;` appears in a value, escaped it as a double semicolon `;;`.
+* Values are case-sensitive unicode strings which can contain any characters,
+  * Except control characters (`0x00..=0x1f` and `0x7f..=0x9f`).
+  * If semicolons `;` appears in a value, these are escaped as double semicolon `;;`.
 
 ## Grammar
 
@@ -33,7 +34,7 @@ alpha ::= "a".."z" | "A".."Z"
 alphanumeric ::= "a".."z" | "A".."Z" | "0".."9"
 value_char ::= non_semicolon_char | escaped_semicolon
 escaped_semicolon ::= ";;"
-non_semicolon_char ::= ? any character except ';' ?
+non_semicolon_char ::= ? any unicode character except ';', 0x00..=0x1f and 0x7f..=0x9f ?
 ```
 
 ## Usage
