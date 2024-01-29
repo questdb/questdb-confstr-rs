@@ -2,7 +2,8 @@
 
 ## Format
 
-Parser for a configuration string format used by QuestDB clients.
+Parser for a configuration string format used by
+[QuestDB clients](https://questdb.io/docs/reference/clients/overview/).
 
 The format is as follows:
 
