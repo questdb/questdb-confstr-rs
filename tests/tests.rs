@@ -347,3 +347,12 @@ fn invalid_ctrl_chars_in_value() {
         );
     }
 }
+
+#[test]
+fn empty_value() -> Result<(), ParsingError> {
+    let input = "http::x=;";
+    let config = parse_conf_str(input)?;
+    assert_eq!(config.service(), "http");
+    assert_eq!(config.get("x"), Some(""));
+    Ok(())
+}
