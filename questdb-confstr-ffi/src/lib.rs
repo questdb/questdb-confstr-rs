@@ -26,6 +26,7 @@
 #![allow(clippy::missing_safety_doc)]
 
 use questdb_confstr::{parse_conf_str, ConfStr};
+use std::collections::hash_map;
 use std::os::raw::c_char;
 use std::ptr;
 use std::slice;
@@ -125,6 +126,57 @@ pub unsafe extern "C" fn questdb_conf_str_get(
             val_str
         }
         None => ptr::null(),
+    }
+}
+
+#[repr(C)]
+pub struct questdb_conf_str_iter {
+    inner: hash_map::Iter<'static, String, String>,
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn questdb_conf_str_iter_pairs(
+    conf_str: *const questdb_conf_str,
+) -> *mut questdb_conf_str_iter {
+    if conf_str.is_null() {
+        return ptr::null_mut();
+    }
+    let conf_str = &(*conf_str).inner;
+    let iter = questdb_conf_str_iter {
+        inner: conf_str.params().iter(),
+    };
+    Box::into_raw(Box::new(iter))
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn questdb_conf_str_iter_next(
+    iter: *mut questdb_conf_str_iter,
+    key_out: *mut *const c_char,
+    key_len_out: *mut usize,
+    val_out: *mut *const c_char,
+    val_len_out: *mut usize,
+) -> bool {
+    let iter = &mut *iter;
+    match iter.inner.next() {
+        Some((key, val)) => {
+            let key_str = key.as_ptr() as *const c_char;
+            let val_str = val.as_ptr() as *const c_char;
+            unsafe {
+                *key_out = key_str;
+                *key_len_out = key.len();
+                *val_out = val_str;
+                *val_len_out = val.len();
+            }
+            true
+        }
+        None => false,
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn questdb_conf_str_iter_free(iter: *mut questdb_conf_str_iter) {
+    if !iter.is_null() {
+        drop(Box::from_raw(iter));
     }
 }
 

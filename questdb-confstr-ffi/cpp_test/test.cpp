@@ -23,6 +23,7 @@
  ******************************************************************************/
 
 #include <iostream>
+#include <unordered_map>
 
 #include <questdb/conf_str.hpp>
 
@@ -56,4 +57,14 @@ TEST_CASE("parse error")
     }
 }
 
+TEST_CASE("iter params") {
+    const auto c1 = conf_str::parse("http::host=localhost;port=9000;");
+    std::unordered_map<std::string, std::string> params;
+    for (auto it = c1.begin(); it != c1.end(); ++it) {
+        params.emplace(it.key(), it.value());
+    }
+    CHECK(params.size() == 2);
+    CHECK(params["host"] == "localhost");
+    CHECK(params["port"] == "9000");
+}
 
