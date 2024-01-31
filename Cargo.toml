@@ -1,0 +1,7 @@
+[workspace]
+
+members = [
+    "questdb-confstr", "questdb-confstr-ffi",
+]
+
+resolver = "2"

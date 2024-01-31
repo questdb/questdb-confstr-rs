@@ -1,0 +1,10 @@
+[package]
+name = "questdb-confstr"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+description = "A parser for a configuration string format handling service names and parameters"
+repository = "https://github.com/questdb/questdb-confstr-rs"
+keywords = ["questdb", "configuration", "parser"]
+categories = ["config", "parser-implementations"]
+authors = ["Adam Cimarosti <adam@questdb.io>"]

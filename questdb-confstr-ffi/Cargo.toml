@@ -1,0 +1,16 @@
+[package]
+name = "questdb-confstr-ffi"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+description = "C FFI bindings for questdb-confstr"
+repository = "https://github.com/questdb/questdb-confstr-rs"
+keywords = ["questdb", "configuration", "parser"]
+categories = ["config", "parser-implementations"]
+authors = ["Adam Cimarosti <adam@questdb.io>"]
+
+[dependencies]
+questdb-confstr = { path = "../questdb-confstr", version = "0.1.0" }
+
+[lib]
+crate-type = ["lib", "staticlib"]

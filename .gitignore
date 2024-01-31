@@ -1,0 +1,6 @@
+/target
+Cargo.lock
+tarpaulin-report.html
+.idea
+.vscode
+questdb-confstr-ffi/cpp_test/build
