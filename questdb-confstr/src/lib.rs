@@ -174,12 +174,10 @@ fn parse_ident(
     let mut token = String::new();
     while let Some((pos, c)) = iter.peek0() {
         *next_pos = *pos;
-        let take = if token.is_empty() {
-            c.is_ascii_alphabetic()
+        if c.is_ascii_alphanumeric() || *c == '_' {
+            token.push(c.to_ascii_lowercase());
+            iter.next();
         } else {
-            c.is_ascii_alphanumeric()
-        };
-        if !take {
             if token.is_empty() {
                 return Err(parse_err(ErrorKind::ExpectedIdentifierNot(*c), *next_pos));
             } else if !c.is_ascii() || matches!(c, '\0'..=' ') {
@@ -187,8 +185,6 @@ fn parse_ident(
             }
             break;
         }
-        token.push(c.to_ascii_lowercase());
-        iter.next();
     }
 
     if token.is_empty() {

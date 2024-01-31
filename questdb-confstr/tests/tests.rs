@@ -22,6 +22,7 @@
  *
  ******************************************************************************/
 
+use std::collections::HashMap;
 use questdb_confstr::{parse_conf_str, ErrorKind, ParsingError};
 
 #[test]
@@ -75,17 +76,24 @@ fn duplicate_key() {
 }
 
 #[test]
-fn key_must_start_with_letter() {
+fn key_can_start_with_number() -> Result<(), ParsingError> {
     let input = "https::123=456;";
-    let config = parse_conf_str(input);
-    assert!(config.is_err());
-    let err = config.unwrap_err();
-    assert_eq!(err.kind().clone(), ErrorKind::ExpectedIdentifierNot('1'));
-    assert_eq!(err.position(), 7);
-    assert_eq!(
-        err.to_string(),
-        "expected identifier to start with ascii letter, not '1' at position 7"
-    );
+    let config = parse_conf_str(input)?;
+    assert_eq!(config.service(), "https");
+    let mut expected = HashMap::new();
+    expected.insert("123".to_string(), "456".to_string());
+    assert_eq!(config.params(), &expected);
+    Ok(())
+}
+
+#[test]
+fn identifiers_can_contain_underscores() -> Result<(), ParsingError> {
+    let input = "_A_::__x_Y__=42;";
+    let config = parse_conf_str(input)?;
+    assert_eq!(config.service(), "_a_");
+    let mut expected = HashMap::new();
+    expected.insert("__x_y__".to_string(), "42".to_string());
+    Ok(())
 }
 
 #[test]
