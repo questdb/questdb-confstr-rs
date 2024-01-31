@@ -22,8 +22,8 @@
  *
  ******************************************************************************/
 
-use std::collections::HashMap;
 use questdb_confstr::{parse_conf_str, ErrorKind, ParsingError};
+use std::collections::HashMap;
 
 #[test]
 fn empty() -> Result<(), ParsingError> {

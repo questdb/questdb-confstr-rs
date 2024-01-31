@@ -30,6 +30,8 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "doctest.hpp"
 
+using namespace questdb::conf_str;
+
 TEST_CASE("basic no params")
 {
     const auto c1 = conf_str::parse("http");

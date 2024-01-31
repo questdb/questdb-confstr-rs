@@ -5,6 +5,8 @@
 #include <optional>
 #include <string_view>
 
+namespace questdb::conf_str
+{
 
 class parse_err
 {
@@ -157,3 +159,5 @@ private:
     conf_str(::questdb_conf_str* impl) : _impl(impl) {}
     ::questdb_conf_str* _impl;
 };
+
+}
