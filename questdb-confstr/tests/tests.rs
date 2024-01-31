@@ -55,9 +55,11 @@ fn basic() -> Result<(), ParsingError> {
 fn case_sensitivity() -> Result<(), ParsingError> {
     let input = "TcP::Host=LoCaLhOsT;Port=9000;";
     let config = parse_conf_str(input)?;
-    assert_eq!(config.service(), "tcp");
-    assert_eq!(config.get("host"), Some("LoCaLhOsT"));
-    assert_eq!(config.get("port"), Some("9000"));
+    assert_eq!(config.service(), "TcP");
+    assert_eq!(config.get("Host"), Some("LoCaLhOsT"));
+    assert_eq!(config.get("host"), None);
+    assert_eq!(config.get("Port"), Some("9000"));
+    assert_eq!(config.get("port"), None);
     Ok(())
 }
 
@@ -90,9 +92,9 @@ fn key_can_start_with_number() -> Result<(), ParsingError> {
 fn identifiers_can_contain_underscores() -> Result<(), ParsingError> {
     let input = "_A_::__x_Y__=42;";
     let config = parse_conf_str(input)?;
-    assert_eq!(config.service(), "_a_");
+    assert_eq!(config.service(), "_A_");
     let mut expected = HashMap::new();
-    expected.insert("__x_y__".to_string(), "42".to_string());
+    expected.insert("__x_Y__".to_string(), "42".to_string());
     Ok(())
 }
 
@@ -280,9 +282,9 @@ fn escaped_semicolon_missing_trailing() {
 fn escaped_semicolon() -> Result<(), ParsingError> {
     let input = "FTP::HOSTS=abc.com;;def.com;;ghi.net;PORTS=9000;;8000;;7000;;;";
     let config = parse_conf_str(input)?;
-    assert_eq!(config.service(), "ftp");
-    assert_eq!(config.get("hosts"), Some("abc.com;def.com;ghi.net"));
-    assert_eq!(config.get("ports"), Some("9000;8000;7000;"));
+    assert_eq!(config.service(), "FTP");
+    assert_eq!(config.get("HOSTS"), Some("abc.com;def.com;ghi.net"));
+    assert_eq!(config.get("PORTS"), Some("9000;8000;7000;"));
     Ok(())
 }
 

@@ -175,7 +175,7 @@ fn parse_ident(
     while let Some((pos, c)) = iter.peek0() {
         *next_pos = *pos;
         if c.is_ascii_alphanumeric() || *c == '_' {
-            token.push(c.to_ascii_lowercase());
+            token.push(*c);
             iter.next();
         } else {
             if token.is_empty() {
