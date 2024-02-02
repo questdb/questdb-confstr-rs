@@ -127,7 +127,7 @@ fn key_cannot_be_empty() {
 }
 
 #[test]
-fn no_params_with_semicolons() -> Result<(), ParsingError> {
+fn no_params_with_colons() -> Result<(), ParsingError> {
     let input = "https::";
     let config = parse_conf_str(input)?;
     assert_eq!(config.service(), "https");
@@ -136,7 +136,7 @@ fn no_params_with_semicolons() -> Result<(), ParsingError> {
 }
 
 #[test]
-fn no_params_no_semicolons() -> Result<(), ParsingError> {
+fn no_params_no_colons() -> Result<(), ParsingError> {
     let input = "https";
     let config = parse_conf_str(input)?;
     assert_eq!(config.service(), "https");
@@ -187,7 +187,7 @@ fn url_as_service_separator() {
 }
 
 #[test]
-fn no_service_name_with_semicolons() {
+fn no_service_name_with_colons() {
     let input = "::host=localhost;";
     let config = parse_conf_str(input);
     assert!(config.is_err());
@@ -201,7 +201,7 @@ fn no_service_name_with_semicolons() {
 }
 
 #[test]
-fn no_service_name_no_semicolons() {
+fn no_service_name_no_colons() {
     let input = "host=localhost;";
     let config = parse_conf_str(input);
     assert!(config.is_err());
