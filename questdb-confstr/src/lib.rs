@@ -92,7 +92,6 @@ pub enum ErrorKind {
     BadSeparator((char, char)),
     IncompleteKeyValue,
     InvalidCharInValue(char),
-    MissingTrailingSemicolon,
     DuplicateKey(String),
 }
 
@@ -130,7 +129,6 @@ impl Display for ErrorKind {
                 write!(f, "incomplete key-value pair before end of input")
             }
             ErrorKind::InvalidCharInValue(c) => write!(f, "invalid char {:?} in value", c),
-            ErrorKind::MissingTrailingSemicolon => write!(f, "missing trailing semicolon"),
             ErrorKind::DuplicateKey(s) => write!(f, "duplicate key {:?}", s),
         }
     }
