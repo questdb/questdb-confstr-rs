@@ -12,7 +12,7 @@ service::key1=value1;key2=value2;key3=value3;
 ```
 
 A few rules:
-* The last semicolon is mandatory.
+* The last semicolon is optional.
 * Service name and keys are case-sensitive.
 * Keys are ASCII alphanumeric and can contain underscores.
 * Values are case-sensitive unicode strings which can contain any characters,
@@ -21,10 +21,10 @@ A few rules:
 
 ## Grammar
 
-```plain
+```json
 conf_str ::= service "::" params | service
 service ::= identifier
-params ::= param (";" param)* ";"
+params ::= param (";" param)* ";"?
 param ::= key "=" value
 key ::= identifier
 value ::= { value_char }
