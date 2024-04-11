@@ -259,23 +259,19 @@ fn test_incomplete_key_no_value() {
 #[test]
 fn missing_trailing_semicolon() {
     let input = "http::host=localhost;port=9000";
-    let config = parse_conf_str(input);
-    assert!(config.is_err());
-    let err = config.unwrap_err();
-    assert_eq!(ErrorKind::MissingTrailingSemicolon, err.kind());
-    assert_eq!(err.position(), 30);
-    assert_eq!(err.to_string(), "missing trailing semicolon at position 30");
+    let config = parse_conf_str(input).unwrap();
+    assert_eq!(config.service(), "http");
+    assert_eq!(config.get("host"), Some("localhost"));
+    assert_eq!(config.get("port"), Some("9000"));
 }
 
 #[test]
 fn escaped_semicolon_missing_trailing() {
     let input = "http::host=localhost;port=9000;;";
-    let config = parse_conf_str(input);
-    assert!(config.is_err());
-    let err = config.unwrap_err();
-    assert_eq!(err.kind(), ErrorKind::MissingTrailingSemicolon);
-    assert_eq!(err.position(), 32);
-    assert_eq!(err.to_string(), "missing trailing semicolon at position 32");
+    let config = parse_conf_str(input).unwrap();
+    assert_eq!(config.service(), "http");
+    assert_eq!(config.get("host"), Some("localhost"));
+    assert_eq!(config.get("port"), Some("9000;"));
 }
 
 #[test]

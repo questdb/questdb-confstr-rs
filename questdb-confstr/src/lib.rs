@@ -92,7 +92,6 @@ pub enum ErrorKind {
     BadSeparator((char, char)),
     IncompleteKeyValue,
     InvalidCharInValue(char),
-    MissingTrailingSemicolon,
     DuplicateKey(String),
 }
 
@@ -130,7 +129,6 @@ impl Display for ErrorKind {
                 write!(f, "incomplete key-value pair before end of input")
             }
             ErrorKind::InvalidCharInValue(c) => write!(f, "invalid char {:?} in value", c),
-            ErrorKind::MissingTrailingSemicolon => write!(f, "missing trailing semicolon"),
             ErrorKind::DuplicateKey(s) => write!(f, "duplicate key {:?}", s),
         }
     }
@@ -197,7 +195,6 @@ fn parse_ident(
 fn parse_value(
     iter: &mut Peekable2<CharIndices>,
     next_pos: &mut Position,
-    input_len: usize,
 ) -> Result<Value, ParsingError> {
     let mut value = String::new();
     loop {
@@ -220,7 +217,7 @@ fn parse_value(
                 value.push(c);
                 let _ = iter.next();
             }
-            (None, _) => return Err(parse_err(ErrorKind::MissingTrailingSemicolon, input_len)),
+            (None, _) => break,
         }
     }
     Ok(value)
@@ -262,8 +259,8 @@ fn parse_params(
             Some((p, c)) => return Err(parse_err(ErrorKind::BadSeparator(('=', c)), p)),
             None => return Err(parse_err(ErrorKind::IncompleteKeyValue, input_len)),
         }
-        let value = parse_value(iter, next_pos, input_len)?;
-        iter.next().unwrap(); // skip ';'
+        let value = parse_value(iter, next_pos)?;
+        iter.next(); // skip ';', if present.
         params.insert(key, value);
     }
     Ok(params)
