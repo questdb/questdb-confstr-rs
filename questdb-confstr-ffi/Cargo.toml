@@ -1,6 +1,6 @@
 [package]
 name = "questdb-confstr-ffi"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 license = "Apache-2.0"
 description = "C FFI bindings for questdb-confstr"

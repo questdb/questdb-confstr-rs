@@ -1,24 +1,7 @@
 # QuestDB configuration string parser
 
-This is for:
-* The [questdb-confstr](./questdb-confstr) crate
+Consists of:
+* The [questdb-confstr](./questdb-confstr) crate (documents grammar)
 * and its bindings for C [questdb-confstr-ffi](./questdb-confstr-ffi)
 
-## Dev notes
-
-To build and test:
-
-```
-cargo clean
-cargo build
-cargo test
-cd questdb-confstr-ffi/cpp_test
-./compile
-./run
-```
-
-In addition, before pushing a PR, please run:
-```
-cargo fmt --all
-cargo clippy --all-targets -- -D warnings
-```
+See the [developer notes](./DEV_NOTES.md) for more details on building, testing and cutting a release.
