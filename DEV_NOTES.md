@@ -63,7 +63,7 @@ cargo login
 (cd questdb-confstr-ffi && cargo publish --dry-run)
 
 (cd questdb-confstr && cargo publish)
-(cd questdb-confstr && cargo publish)
+(cd questdb-confstr-ffi && cargo publish)
 ```
 
 (If in doubt, see the
