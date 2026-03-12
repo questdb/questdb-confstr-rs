@@ -23,7 +23,6 @@
  ******************************************************************************/
 
 use questdb_confstr::{parse_conf_str, ErrorKind, ParsingError};
-use std::collections::HashMap;
 
 #[test]
 fn empty() -> Result<(), ParsingError> {
@@ -64,17 +63,40 @@ fn case_sensitivity() -> Result<(), ParsingError> {
 }
 
 #[test]
-fn duplicate_key() {
-    let input = "http::host=127.0.0.1;host=localhost;port=9000;";
-    let config = parse_conf_str(input);
-    assert!(config.is_err());
-    let err = config.unwrap_err();
-    assert_eq!(
-        err.kind().clone(),
-        ErrorKind::DuplicateKey("host".to_string())
-    );
-    assert_eq!(err.position(), 21);
-    assert_eq!(err.to_string(), "duplicate key \"host\" at position 21");
+fn duplicate_key_allowed() -> Result<(), ParsingError> {
+    let input = "http::addr=host1:9000;addr=host2:9000;port=9000;";
+    let config = parse_conf_str(input)?;
+    assert_eq!(config.service(), "http");
+    // get() returns last value
+    assert_eq!(config.get("addr"), Some("host2:9000"));
+    assert_eq!(config.get("port"), Some("9000"));
+    // get_all() returns all values in order
+    assert_eq!(config.get_all("addr"), vec!["host1:9000", "host2:9000"]);
+    assert_eq!(config.get_all("port"), vec!["9000"]);
+    assert_eq!(config.get_all("nonexistent"), Vec::<&str>::new());
+    Ok(())
+}
+
+#[test]
+fn duplicate_key_preserves_order() -> Result<(), ParsingError> {
+    let input = "http::addr=a:1;addr=b:2;addr=c:3;";
+    let config = parse_conf_str(input)?;
+    assert_eq!(config.get_all("addr"), vec!["a:1", "b:2", "c:3"]);
+    // get() returns the last one
+    assert_eq!(config.get("addr"), Some("c:3"));
+    Ok(())
+}
+
+#[test]
+fn params_preserves_insertion_order() -> Result<(), ParsingError> {
+    let input = "http::z=1;a=2;m=3;";
+    let config = parse_conf_str(input)?;
+    let params = config.params();
+    assert_eq!(params.len(), 3);
+    assert_eq!(params[0], ("z".to_string(), "1".to_string()));
+    assert_eq!(params[1], ("a".to_string(), "2".to_string()));
+    assert_eq!(params[2], ("m".to_string(), "3".to_string()));
+    Ok(())
 }
 
 #[test]
@@ -82,8 +104,7 @@ fn key_can_start_with_number() -> Result<(), ParsingError> {
     let input = "https::123=456;";
     let config = parse_conf_str(input)?;
     assert_eq!(config.service(), "https");
-    let mut expected = HashMap::new();
-    expected.insert("123".to_string(), "456".to_string());
+    let expected = vec![("123".to_string(), "456".to_string())];
     assert_eq!(config.params(), &expected);
     Ok(())
 }
@@ -93,8 +114,7 @@ fn identifiers_can_contain_underscores() -> Result<(), ParsingError> {
     let input = "_A_::__x_Y__=42;";
     let config = parse_conf_str(input)?;
     assert_eq!(config.service(), "_A_");
-    let mut expected = HashMap::new();
-    expected.insert("__x_Y__".to_string(), "42".to_string());
+    assert_eq!(config.get("__x_Y__"), Some("42"));
     Ok(())
 }
 

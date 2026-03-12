@@ -26,7 +26,6 @@
 #![allow(clippy::missing_safety_doc)]
 
 use questdb_confstr::{parse_conf_str, ConfStr};
-use std::collections::hash_map;
 use std::os::raw::c_char;
 use std::ptr;
 use std::slice;
@@ -131,7 +130,7 @@ pub unsafe extern "C" fn questdb_conf_str_get(
 
 #[repr(C)]
 pub struct questdb_conf_str_iter {
-    inner: hash_map::Iter<'static, String, String>,
+    inner: std::slice::Iter<'static, (String, String)>,
 }
 
 #[no_mangle]

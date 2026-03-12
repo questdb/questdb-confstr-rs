@@ -48,7 +48,8 @@ cargo add questdb-confstr
 
 Use the `parse_conf_str` function to parse into a `ConfStr` struct.
 
-You can then access the service name as `&str` and parameters as a `&HashMap<String, String>`.
+You can then access the service name as `&str` and parameters as a `&Vec<(String, String)>`.
+Duplicate keys are preserved; use `get_all` to retrieve all values for a given key.
 
 ### Where we use it
 

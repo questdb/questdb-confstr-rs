@@ -25,7 +25,6 @@
 #![doc = include_str!("../README.md")]
 
 use crate::peekable2::{Peekable2, Peekable2Ext};
-use std::collections::HashMap;
 use std::fmt;
 use std::fmt::{Debug, Display, Formatter};
 use std::str::CharIndices;
@@ -39,8 +38,8 @@ pub type Key = String;
 pub type Value = String;
 
 /// Parameters are stored in a `Vec` of `(Key, Value)` pairs.
-/// Keys are always lowercase.
-pub type Params = HashMap<Key, Value>;
+/// Duplicate keys are allowed (e.g. multiple `addr` entries for multi-url support).
+pub type Params = Vec<(Key, Value)>;
 
 /// Parsed configuration string.
 ///
@@ -73,10 +72,25 @@ impl ConfStr {
         &self.params
     }
 
-    /// Get a parameter.
+    /// Get the last value for a parameter key.
+    /// If the key appears multiple times, the last value is returned.
     /// Key should always be specified as lowercase.
     pub fn get(&self, key: &str) -> Option<&str> {
-        self.params.get(key).map(|s| s.as_str())
+        self.params
+            .iter()
+            .rev()
+            .find(|(k, _)| k == key)
+            .map(|(_, v)| v.as_str())
+    }
+
+    /// Get all values for a parameter key, in insertion order.
+    /// Useful for keys that may appear multiple times (e.g. `addr`).
+    pub fn get_all(&self, key: &str) -> Vec<&str> {
+        self.params
+            .iter()
+            .filter(|(k, _)| k == key)
+            .map(|(_, v)| v.as_str())
+            .collect()
     }
 }
 
@@ -92,7 +106,6 @@ pub enum ErrorKind {
     BadSeparator((char, char)),
     IncompleteKeyValue,
     InvalidCharInValue(char),
-    DuplicateKey(String),
 }
 
 impl<'a> PartialEq<&'a ErrorKind> for ErrorKind {
@@ -129,7 +142,6 @@ impl Display for ErrorKind {
                 write!(f, "incomplete key-value pair before end of input")
             }
             ErrorKind::InvalidCharInValue(c) => write!(f, "invalid char {:?} in value", c),
-            ErrorKind::DuplicateKey(s) => write!(f, "duplicate key {:?}", s),
         }
     }
 }
@@ -249,11 +261,7 @@ fn parse_params(
     let mut params = Params::new();
     while let Some((p, _)) = iter.peek0() {
         *next_pos = *p;
-        let key_pos = *next_pos;
         let key = parse_ident(iter, next_pos)?;
-        if params.contains_key(&key) {
-            return Err(parse_err(ErrorKind::DuplicateKey(key.clone()), key_pos));
-        }
         match iter.next() {
             Some((p, '=')) => *next_pos = p + 1,
             Some((p, c)) => return Err(parse_err(ErrorKind::BadSeparator(('=', c)), p)),
@@ -261,7 +269,7 @@ fn parse_params(
         }
         let value = parse_value(iter, next_pos)?;
         iter.next(); // skip ';', if present.
-        params.insert(key, value);
+        params.push((key, value));
     }
     Ok(params)
 }
