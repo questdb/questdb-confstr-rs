@@ -24,6 +24,7 @@
 
 #include <iostream>
 #include <unordered_map>
+#include <vector>
 
 #include <questdb/conf_str.hpp>
 
@@ -61,12 +62,45 @@ TEST_CASE("parse error")
 
 TEST_CASE("iter params") {
     const auto c1 = conf_str::parse("http::host=localhost;port=9000;");
-    std::unordered_map<std::string, std::string> params;
+    std::vector<std::pair<std::string_view, std::string_view>> params;
     for (auto it = c1.begin(); it != c1.end(); ++it) {
-        params.emplace(it.key(), it.value());
+        params.emplace_back(it.key(), it.value());
     }
     CHECK(params.size() == 2);
-    CHECK(params["host"] == "localhost");
-    CHECK(params["port"] == "9000");
+    CHECK(params[0].first == "host");
+    CHECK(params[0].second == "localhost");
+    CHECK(params[1].first == "port");
+    CHECK(params[1].second == "9000");
+}
+
+TEST_CASE("duplicate keys via iterator") {
+    const auto c1 = conf_str::parse("http::addr=host1:9000;addr=host2:9001;");
+    std::vector<std::pair<std::string_view, std::string_view>> params;
+    for (auto it = c1.begin(); it != c1.end(); ++it) {
+        params.emplace_back(it.key(), it.value());
+    }
+    CHECK(params.size() == 2);
+    CHECK(params[0].first == "addr");
+    CHECK(params[0].second == "host1:9000");
+    CHECK(params[1].first == "addr");
+    CHECK(params[1].second == "host2:9001");
+}
+
+TEST_CASE("get_all") {
+    const auto c1 = conf_str::parse("http::addr=host1:9000;addr=host2:9001;port=9000;");
+    auto addrs = c1.get_all("addr");
+    CHECK(addrs.size() == 2);
+    CHECK(addrs[0] == "host1:9000");
+    CHECK(addrs[1] == "host2:9001");
+
+    auto ports = c1.get_all("port");
+    CHECK(ports.size() == 1);
+    CHECK(ports[0] == "9000");
+
+    auto missing = c1.get_all("nonexistent");
+    CHECK(missing.empty());
+
+    // get() still returns the last value
+    CHECK(c1.get("addr") == "host2:9001");
 }
 
