@@ -302,7 +302,10 @@ fn escaped_semicolon() -> Result<(), ParsingError> {
     let input = "FTP::HOSTS=abc.com;;def.com;;ghi.net;PORTS=9000;;8000;;7000;;;";
     let config = parse_conf_str(input)?;
     assert_eq!(config.service(), "FTP");
-    assert_eq!(config.get("HOSTS").unwrap(), Some("abc.com;def.com;ghi.net"));
+    assert_eq!(
+        config.get("HOSTS").unwrap(),
+        Some("abc.com;def.com;ghi.net")
+    );
     assert_eq!(config.get("PORTS").unwrap(), Some("9000;8000;7000;"));
     Ok(())
 }
