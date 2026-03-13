@@ -15,6 +15,7 @@ A few rules:
 * The last semicolon is optional.
 * Service name and keys are case-sensitive.
 * Keys are ASCII alphanumeric and can contain underscores.
+* Duplicate keys are allowed (the same key may appear multiple times).
 * Values are case-sensitive unicode strings which can contain any characters,
   * Except control characters (`0x00..=0x1f` and `0x7f..=0x9f`).
   * If semicolons `;` appears in a value, these are escaped as double semicolon `;;`.
@@ -49,7 +50,10 @@ cargo add questdb-confstr
 Use the `parse_conf_str` function to parse into a `ConfStr` struct.
 
 You can then access the service name as `&str` and parameters as a `&Vec<(String, String)>`.
-Duplicate keys are preserved; use `get_all` to retrieve all values for a given key.
+
+Duplicate keys are allowed (e.g. multiple `addr` entries for failover).
+Use `get_all(key)` to retrieve all values, or `get(key)` for keys expected to be unique
+(`get` returns `Err(DuplicateKeyError)` if the key appears more than once).
 
 ### Where we use it
 

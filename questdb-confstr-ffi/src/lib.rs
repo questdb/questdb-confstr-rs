@@ -245,6 +245,30 @@ pub unsafe extern "C" fn questdb_conf_str_val_iter_free(iter: *mut questdb_conf_
     }
 }
 
+/// Return the number of times `key` appears in the configuration string.
+/// Returns 0 if the key is not found, 1 for a unique key, >1 for duplicate keys.
+/// This lets C callers distinguish "key not found" (count == 0) from
+/// "duplicate key" (count > 1) when `questdb_conf_str_get` returns NULL.
+#[no_mangle]
+pub unsafe extern "C" fn questdb_conf_str_key_count(
+    conf_str: *const questdb_conf_str,
+    key: *const c_char,
+    key_len: usize,
+) -> usize {
+    if conf_str.is_null() || key.is_null() {
+        return 0;
+    }
+
+    let conf_str = &(*conf_str).inner;
+    let key = slice::from_raw_parts(key as *const u8, key_len);
+    let key_str = match std::str::from_utf8(key) {
+        Ok(s) => s,
+        Err(_) => return 0,
+    };
+
+    conf_str.get_all(key_str).len()
+}
+
 #[no_mangle]
 pub unsafe extern "C" fn questdb_conf_str_free(conf_str: *mut questdb_conf_str) {
     if !conf_str.is_null() {

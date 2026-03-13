@@ -140,6 +140,11 @@ public:
         return {};
     }
 
+    size_t key_count(std::string_view key) const noexcept
+    {
+        return ::questdb_conf_str_key_count(_impl, key.data(), key.size());
+    }
+
     std::vector<std::string_view> get_all(std::string_view key) const noexcept
     {
         std::vector<std::string_view> result;

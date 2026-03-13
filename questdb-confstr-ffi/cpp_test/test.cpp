@@ -102,5 +102,28 @@ TEST_CASE("get_all") {
 
     // get() returns nullopt for duplicate keys
     CHECK(c1.get("addr") == std::nullopt);
+
+    // key_count() lets callers distinguish "not found" from "duplicate key"
+    CHECK(c1.key_count("addr") == 2);
+    CHECK(c1.key_count("port") == 1);
+    CHECK(c1.key_count("nonexistent") == 0);
+}
+
+TEST_CASE("key_count") {
+    const auto c1 = conf_str::parse("http::host=localhost;port=9000;");
+    CHECK(c1.key_count("host") == 1);
+    CHECK(c1.key_count("port") == 1);
+    CHECK(c1.key_count("missing") == 0);
+
+    const auto c2 = conf_str::parse("http::addr=a;addr=b;addr=c;");
+    CHECK(c2.key_count("addr") == 3);
+    CHECK(c2.key_count("missing") == 0);
+
+    // Demonstrates the pattern: use key_count to distinguish
+    // get() returning nullopt for "not found" vs "duplicate key"
+    CHECK(c2.get("addr") == std::nullopt);
+    CHECK(c2.key_count("addr") > 1);  // duplicate, not missing
+    CHECK(c2.get("missing") == std::nullopt);
+    CHECK(c2.key_count("missing") == 0);  // truly missing
 }
 

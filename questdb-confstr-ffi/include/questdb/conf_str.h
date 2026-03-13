@@ -61,6 +61,11 @@ bool questdb_conf_str_val_iter_next(
 
 void questdb_conf_str_val_iter_free(questdb_conf_str_val_iter* iter);
 
+size_t questdb_conf_str_key_count(
+    const questdb_conf_str* conf_str,
+    const char* key,
+    size_t key_len);
+
 void questdb_conf_str_free(questdb_conf_str* str);
 
 #if defined(__cplusplus)
