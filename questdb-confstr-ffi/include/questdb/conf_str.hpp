@@ -4,6 +4,7 @@
 
 #include <optional>
 #include <string_view>
+#include <vector>
 
 namespace questdb::conf_str
 {
@@ -137,6 +138,28 @@ public:
             return { { str, val_len } };
         }
         return {};
+    }
+
+    size_t key_count(std::string_view key) const noexcept
+    {
+        return ::questdb_conf_str_key_count(_impl, key.data(), key.size());
+    }
+
+    std::vector<std::string_view> get_all(std::string_view key) const noexcept
+    {
+        std::vector<std::string_view> result;
+        auto iter = ::questdb_conf_str_get_all(_impl, key.data(), key.size());
+        if (iter != nullptr)
+        {
+            const char* val = nullptr;
+            size_t val_len = 0;
+            while (::questdb_conf_str_val_iter_next(iter, &val, &val_len))
+            {
+                result.emplace_back(val, val_len);
+            }
+            ::questdb_conf_str_val_iter_free(iter);
+        }
+        return result;
     }
 
     pair_iter begin() const noexcept

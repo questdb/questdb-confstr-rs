@@ -26,7 +26,6 @@
 #![allow(clippy::missing_safety_doc)]
 
 use questdb_confstr::{parse_conf_str, ConfStr};
-use std::collections::hash_map;
 use std::os::raw::c_char;
 use std::ptr;
 use std::slice;
@@ -120,18 +119,25 @@ pub unsafe extern "C" fn questdb_conf_str_get(
     };
 
     match conf_str.get(key_str) {
-        Some(val) => {
-            let val_str = val.as_ptr() as *const c_char;
+        Ok(Some(val)) => {
             *val_len_out = val.len();
-            val_str
+            val.as_ptr() as *const c_char
         }
-        None => ptr::null(),
+        Ok(None) | Err(_) => ptr::null(),
     }
+}
+
+/// Iterator over all values for a given key (for duplicate key support).
+#[repr(C)]
+pub struct questdb_conf_str_val_iter {
+    /// Borrowed string pointers into the parent `questdb_conf_str`.
+    values: Vec<(*const c_char, usize)>,
+    index: usize,
 }
 
 #[repr(C)]
 pub struct questdb_conf_str_iter {
-    inner: hash_map::Iter<'static, String, String>,
+    inner: std::slice::Iter<'static, (String, String)>,
 }
 
 #[no_mangle]
@@ -178,6 +184,89 @@ pub unsafe extern "C" fn questdb_conf_str_iter_free(iter: *mut questdb_conf_str_
     if !iter.is_null() {
         drop(Box::from_raw(iter));
     }
+}
+
+/// Get an iterator over all values for a given key.
+/// The caller must keep the `questdb_conf_str` alive while using this iterator.
+/// Returns NULL if `conf_str` or `key` is NULL.
+#[no_mangle]
+pub unsafe extern "C" fn questdb_conf_str_get_all(
+    conf_str: *const questdb_conf_str,
+    key: *const c_char,
+    key_len: usize,
+) -> *mut questdb_conf_str_val_iter {
+    if conf_str.is_null() || key.is_null() {
+        return ptr::null_mut();
+    }
+
+    let conf_str = &(*conf_str).inner;
+    let key = slice::from_raw_parts(key as *const u8, key_len);
+    let key_str = match std::str::from_utf8(key) {
+        Ok(s) => s,
+        Err(_) => return ptr::null_mut(),
+    };
+
+    let values: Vec<(*const c_char, usize)> = conf_str
+        .get_all(key_str)
+        .into_iter()
+        .map(|v| (v.as_ptr() as *const c_char, v.len()))
+        .collect();
+
+    Box::into_raw(Box::new(questdb_conf_str_val_iter { values, index: 0 }))
+}
+
+/// Advance the value iterator. Returns true if a value was available.
+#[no_mangle]
+pub unsafe extern "C" fn questdb_conf_str_val_iter_next(
+    iter: *mut questdb_conf_str_val_iter,
+    val_out: *mut *const c_char,
+    val_len_out: *mut usize,
+) -> bool {
+    if iter.is_null() {
+        return false;
+    }
+    let iter = &mut *iter;
+    if iter.index < iter.values.len() {
+        let (ptr, len) = iter.values[iter.index];
+        *val_out = ptr;
+        *val_len_out = len;
+        iter.index += 1;
+        true
+    } else {
+        false
+    }
+}
+
+/// Free a value iterator.
+#[no_mangle]
+pub unsafe extern "C" fn questdb_conf_str_val_iter_free(iter: *mut questdb_conf_str_val_iter) {
+    if !iter.is_null() {
+        drop(Box::from_raw(iter));
+    }
+}
+
+/// Return the number of times `key` appears in the configuration string.
+/// Returns 0 if the key is not found, 1 for a unique key, >1 for duplicate keys.
+/// This lets C callers distinguish "key not found" (count == 0) from
+/// "duplicate key" (count > 1) when `questdb_conf_str_get` returns NULL.
+#[no_mangle]
+pub unsafe extern "C" fn questdb_conf_str_key_count(
+    conf_str: *const questdb_conf_str,
+    key: *const c_char,
+    key_len: usize,
+) -> usize {
+    if conf_str.is_null() || key.is_null() {
+        return 0;
+    }
+
+    let conf_str = &(*conf_str).inner;
+    let key = slice::from_raw_parts(key as *const u8, key_len);
+    let key_str = match std::str::from_utf8(key) {
+        Ok(s) => s,
+        Err(_) => return 0,
+    };
+
+    conf_str.get_all(key_str).len()
 }
 
 #[no_mangle]

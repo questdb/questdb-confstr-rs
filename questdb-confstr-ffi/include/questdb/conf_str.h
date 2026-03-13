@@ -20,6 +20,7 @@ typedef struct questdb_conf_str_parse_err questdb_conf_str_parse_err;
 void questdb_conf_str_parse_err_free(questdb_conf_str_parse_err* err);
 
 typedef struct questdb_conf_str_iter questdb_conf_str_iter;
+typedef struct questdb_conf_str_val_iter questdb_conf_str_val_iter;
 
 questdb_conf_str* questdb_conf_str_parse(
     const char* str,
@@ -47,6 +48,23 @@ bool questdb_conf_str_iter_next(
     size_t* val_len_out);
 
 void questdb_conf_str_iter_free(questdb_conf_str_iter* iter);
+
+questdb_conf_str_val_iter* questdb_conf_str_get_all(
+    const questdb_conf_str* conf_str,
+    const char* key,
+    size_t key_len);
+
+bool questdb_conf_str_val_iter_next(
+    questdb_conf_str_val_iter* iter,
+    const char** val_out,
+    size_t* val_len_out);
+
+void questdb_conf_str_val_iter_free(questdb_conf_str_val_iter* iter);
+
+size_t questdb_conf_str_key_count(
+    const questdb_conf_str* conf_str,
+    const char* key,
+    size_t key_len);
 
 void questdb_conf_str_free(questdb_conf_str* str);
 

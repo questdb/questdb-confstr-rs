@@ -25,10 +25,36 @@
 #![doc = include_str!("../README.md")]
 
 use crate::peekable2::{Peekable2, Peekable2Ext};
-use std::collections::HashMap;
 use std::fmt;
 use std::fmt::{Debug, Display, Formatter};
 use std::str::CharIndices;
+
+/// Error returned by [`ConfStr::get`] when a key appears more than once.
+///
+/// Use [`ConfStr::get_all`] instead if the key is expected to have multiple values.
+#[derive(Debug, Clone)]
+pub struct DuplicateKeyError {
+    key: String,
+}
+
+impl DuplicateKeyError {
+    /// The key that appeared more than once.
+    pub fn key(&self) -> &str {
+        &self.key
+    }
+}
+
+impl Display for DuplicateKeyError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "key {:?} appears more than once; use get_all() for duplicate keys",
+            self.key
+        )
+    }
+}
+
+impl std::error::Error for DuplicateKeyError {}
 
 mod peekable2;
 
@@ -39,8 +65,8 @@ pub type Key = String;
 pub type Value = String;
 
 /// Parameters are stored in a `Vec` of `(Key, Value)` pairs.
-/// Keys are always lowercase.
-pub type Params = HashMap<Key, Value>;
+/// Duplicate keys are allowed (e.g. multiple `addr` entries for multi-url support).
+pub type Params = Vec<(Key, Value)>;
 
 /// Parsed configuration string.
 ///
@@ -73,10 +99,33 @@ impl ConfStr {
         &self.params
     }
 
-    /// Get a parameter.
-    /// Key should always be specified as lowercase.
-    pub fn get(&self, key: &str) -> Option<&str> {
-        self.params.get(key).map(|s| s.as_str())
+    /// Get the value for a parameter key.
+    ///
+    /// Returns `Err(DuplicateKeyError)` if the key appears more than once.
+    /// Use [`get_all`](Self::get_all) for keys that are expected to have multiple values.
+    pub fn get(&self, key: &str) -> Result<Option<&str>, DuplicateKeyError> {
+        let mut found: Option<&str> = None;
+        for (k, v) in &self.params {
+            if k == key {
+                if found.is_some() {
+                    return Err(DuplicateKeyError {
+                        key: key.to_string(),
+                    });
+                }
+                found = Some(v.as_str());
+            }
+        }
+        Ok(found)
+    }
+
+    /// Get all values for a parameter key, in insertion order.
+    /// Useful for keys that may appear multiple times (e.g. `addr`).
+    pub fn get_all(&self, key: &str) -> Vec<&str> {
+        self.params
+            .iter()
+            .filter(|(k, _)| k == key)
+            .map(|(_, v)| v.as_str())
+            .collect()
     }
 }
 
@@ -92,7 +141,6 @@ pub enum ErrorKind {
     BadSeparator((char, char)),
     IncompleteKeyValue,
     InvalidCharInValue(char),
-    DuplicateKey(String),
 }
 
 impl<'a> PartialEq<&'a ErrorKind> for ErrorKind {
@@ -129,7 +177,6 @@ impl Display for ErrorKind {
                 write!(f, "incomplete key-value pair before end of input")
             }
             ErrorKind::InvalidCharInValue(c) => write!(f, "invalid char {:?} in value", c),
-            ErrorKind::DuplicateKey(s) => write!(f, "duplicate key {:?}", s),
         }
     }
 }
@@ -249,11 +296,7 @@ fn parse_params(
     let mut params = Params::new();
     while let Some((p, _)) = iter.peek0() {
         *next_pos = *p;
-        let key_pos = *next_pos;
         let key = parse_ident(iter, next_pos)?;
-        if params.contains_key(&key) {
-            return Err(parse_err(ErrorKind::DuplicateKey(key.clone()), key_pos));
-        }
         match iter.next() {
             Some((p, '=')) => *next_pos = p + 1,
             Some((p, c)) => return Err(parse_err(ErrorKind::BadSeparator(('=', c)), p)),
@@ -261,7 +304,7 @@ fn parse_params(
         }
         let value = parse_value(iter, next_pos)?;
         iter.next(); // skip ';', if present.
-        params.insert(key, value);
+        params.push((key, value));
     }
     Ok(params)
 }
@@ -273,8 +316,8 @@ fn parse_params(
 /// # use questdb_confstr::ParsingError;
 /// let config = parse_conf_str("service::key1=value1;key2=value2;")?;
 /// assert_eq!(config.service(), "service");
-/// assert_eq!(config.get("key1"), Some("value1"));
-/// assert_eq!(config.get("key2"), Some("value2"));
+/// assert_eq!(config.get("key1").unwrap(), Some("value1"));
+/// assert_eq!(config.get("key2").unwrap(), Some("value2"));
 /// # Ok::<(), ParsingError>(())
 /// ```
 pub fn parse_conf_str(input: &str) -> Result<ConfStr, ParsingError> {
