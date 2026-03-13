@@ -119,12 +119,11 @@ pub unsafe extern "C" fn questdb_conf_str_get(
     };
 
     match conf_str.get(key_str) {
-        Some(val) => {
-            let val_str = val.as_ptr() as *const c_char;
+        Ok(Some(val)) => {
             *val_len_out = val.len();
-            val_str
+            val.as_ptr() as *const c_char
         }
-        None => ptr::null(),
+        Ok(None) | Err(_) => ptr::null(),
     }
 }
 

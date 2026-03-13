@@ -44,8 +44,8 @@ fn basic() -> Result<(), ParsingError> {
     let input = "http::host=127.0.0.1;port=9000;";
     let config = parse_conf_str(input)?;
     assert_eq!(config.service(), "http");
-    assert_eq!(config.get("host"), Some("127.0.0.1"));
-    assert_eq!(config.get("port"), Some("9000"));
+    assert_eq!(config.get("host").unwrap(), Some("127.0.0.1"));
+    assert_eq!(config.get("port").unwrap(), Some("9000"));
     assert_eq!(format!("{:?}", config), "ConfStr { service: \"http\", .. }");
     Ok(())
 }
@@ -55,10 +55,10 @@ fn case_sensitivity() -> Result<(), ParsingError> {
     let input = "TcP::Host=LoCaLhOsT;Port=9000;";
     let config = parse_conf_str(input)?;
     assert_eq!(config.service(), "TcP");
-    assert_eq!(config.get("Host"), Some("LoCaLhOsT"));
-    assert_eq!(config.get("host"), None);
-    assert_eq!(config.get("Port"), Some("9000"));
-    assert_eq!(config.get("port"), None);
+    assert_eq!(config.get("Host").unwrap(), Some("LoCaLhOsT"));
+    assert_eq!(config.get("host").unwrap(), None);
+    assert_eq!(config.get("Port").unwrap(), Some("9000"));
+    assert_eq!(config.get("port").unwrap(), None);
     Ok(())
 }
 
@@ -67,9 +67,12 @@ fn duplicate_key_allowed() -> Result<(), ParsingError> {
     let input = "http::addr=host1:9000;addr=host2:9000;port=9000;";
     let config = parse_conf_str(input)?;
     assert_eq!(config.service(), "http");
-    // get() returns last value
-    assert_eq!(config.get("addr"), Some("host2:9000"));
-    assert_eq!(config.get("port"), Some("9000"));
+    // get() returns error for duplicate keys
+    let err = config.get("addr").unwrap_err();
+    assert_eq!(err.key(), "addr");
+    assert!(err.to_string().contains("appears more than once"));
+    // get() works fine for non-duplicate keys
+    assert_eq!(config.get("port").unwrap(), Some("9000"));
     // get_all() returns all values in order
     assert_eq!(config.get_all("addr"), vec!["host1:9000", "host2:9000"]);
     assert_eq!(config.get_all("port"), vec!["9000"]);
@@ -82,8 +85,8 @@ fn duplicate_key_preserves_order() -> Result<(), ParsingError> {
     let input = "http::addr=a:1;addr=b:2;addr=c:3;";
     let config = parse_conf_str(input)?;
     assert_eq!(config.get_all("addr"), vec!["a:1", "b:2", "c:3"]);
-    // get() returns the last one
-    assert_eq!(config.get("addr"), Some("c:3"));
+    // get() returns error for duplicate keys
+    assert!(config.get("addr").is_err());
     Ok(())
 }
 
@@ -114,7 +117,7 @@ fn identifiers_can_contain_underscores() -> Result<(), ParsingError> {
     let input = "_A_::__x_Y__=42;";
     let config = parse_conf_str(input)?;
     assert_eq!(config.service(), "_A_");
-    assert_eq!(config.get("__x_Y__"), Some("42"));
+    assert_eq!(config.get("__x_Y__").unwrap(), Some("42"));
     Ok(())
 }
 
@@ -281,8 +284,8 @@ fn missing_trailing_semicolon() {
     let input = "http::host=localhost;port=9000";
     let config = parse_conf_str(input).unwrap();
     assert_eq!(config.service(), "http");
-    assert_eq!(config.get("host"), Some("localhost"));
-    assert_eq!(config.get("port"), Some("9000"));
+    assert_eq!(config.get("host").unwrap(), Some("localhost"));
+    assert_eq!(config.get("port").unwrap(), Some("9000"));
 }
 
 #[test]
@@ -290,8 +293,8 @@ fn escaped_semicolon_missing_trailing() {
     let input = "http::host=localhost;port=9000;;";
     let config = parse_conf_str(input).unwrap();
     assert_eq!(config.service(), "http");
-    assert_eq!(config.get("host"), Some("localhost"));
-    assert_eq!(config.get("port"), Some("9000;"));
+    assert_eq!(config.get("host").unwrap(), Some("localhost"));
+    assert_eq!(config.get("port").unwrap(), Some("9000;"));
 }
 
 #[test]
@@ -299,8 +302,8 @@ fn escaped_semicolon() -> Result<(), ParsingError> {
     let input = "FTP::HOSTS=abc.com;;def.com;;ghi.net;PORTS=9000;;8000;;7000;;;";
     let config = parse_conf_str(input)?;
     assert_eq!(config.service(), "FTP");
-    assert_eq!(config.get("HOSTS"), Some("abc.com;def.com;ghi.net"));
-    assert_eq!(config.get("PORTS"), Some("9000;8000;7000;"));
+    assert_eq!(config.get("HOSTS").unwrap(), Some("abc.com;def.com;ghi.net"));
+    assert_eq!(config.get("PORTS").unwrap(), Some("9000;8000;7000;"));
     Ok(())
 }
 
@@ -351,7 +354,7 @@ fn unicode_value() -> Result<(), ParsingError> {
     let input = "http::x=協定;";
     let config = parse_conf_str(input)?;
     assert_eq!(config.service(), "http");
-    assert_eq!(config.get("x"), Some("協定"));
+    assert_eq!(config.get("x").unwrap(), Some("協定"));
     Ok(())
 }
 
@@ -379,6 +382,6 @@ fn empty_value() -> Result<(), ParsingError> {
     let input = "http::x=;";
     let config = parse_conf_str(input)?;
     assert_eq!(config.service(), "http");
-    assert_eq!(config.get("x"), Some(""));
+    assert_eq!(config.get("x").unwrap(), Some(""));
     Ok(())
 }

@@ -29,6 +29,33 @@ use std::fmt;
 use std::fmt::{Debug, Display, Formatter};
 use std::str::CharIndices;
 
+/// Error returned by [`ConfStr::get`] when a key appears more than once.
+///
+/// Use [`ConfStr::get_all`] instead if the key is expected to have multiple values.
+#[derive(Debug, Clone)]
+pub struct DuplicateKeyError {
+    key: String,
+}
+
+impl DuplicateKeyError {
+    /// The key that appeared more than once.
+    pub fn key(&self) -> &str {
+        &self.key
+    }
+}
+
+impl Display for DuplicateKeyError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "key {:?} appears more than once; use get_all() for duplicate keys",
+            self.key
+        )
+    }
+}
+
+impl std::error::Error for DuplicateKeyError {}
+
 mod peekable2;
 
 /// Parameter keys are ascii lowercase strings.
@@ -72,15 +99,23 @@ impl ConfStr {
         &self.params
     }
 
-    /// Get the last value for a parameter key.
-    /// If the key appears multiple times, the last value is returned.
-    /// Key should always be specified as lowercase.
-    pub fn get(&self, key: &str) -> Option<&str> {
-        self.params
-            .iter()
-            .rev()
-            .find(|(k, _)| k == key)
-            .map(|(_, v)| v.as_str())
+    /// Get the value for a parameter key.
+    ///
+    /// Returns `Err(DuplicateKeyError)` if the key appears more than once.
+    /// Use [`get_all`](Self::get_all) for keys that are expected to have multiple values.
+    pub fn get(&self, key: &str) -> Result<Option<&str>, DuplicateKeyError> {
+        let mut found: Option<&str> = None;
+        for (k, v) in &self.params {
+            if k == key {
+                if found.is_some() {
+                    return Err(DuplicateKeyError {
+                        key: key.to_string(),
+                    });
+                }
+                found = Some(v.as_str());
+            }
+        }
+        Ok(found)
     }
 
     /// Get all values for a parameter key, in insertion order.
@@ -281,8 +316,8 @@ fn parse_params(
 /// # use questdb_confstr::ParsingError;
 /// let config = parse_conf_str("service::key1=value1;key2=value2;")?;
 /// assert_eq!(config.service(), "service");
-/// assert_eq!(config.get("key1"), Some("value1"));
-/// assert_eq!(config.get("key2"), Some("value2"));
+/// assert_eq!(config.get("key1").unwrap(), Some("value1"));
+/// assert_eq!(config.get("key2").unwrap(), Some("value2"));
 /// # Ok::<(), ParsingError>(())
 /// ```
 pub fn parse_conf_str(input: &str) -> Result<ConfStr, ParsingError> {

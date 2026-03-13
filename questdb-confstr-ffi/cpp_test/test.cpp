@@ -100,7 +100,7 @@ TEST_CASE("get_all") {
     auto missing = c1.get_all("nonexistent");
     CHECK(missing.empty());
 
-    // get() still returns the last value
-    CHECK(c1.get("addr") == "host2:9001");
+    // get() returns nullopt for duplicate keys
+    CHECK(c1.get("addr") == std::nullopt);
 }
 
